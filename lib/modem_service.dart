@@ -110,20 +110,21 @@ class ModemService {
   }
 
   Future<String?> autoDetectPort() async {
-    final ports = await _manager.getAvailablePorts();
-    for (final p in ports) {
-      SerialPort? test;
-      try {
-        test = await _manager.openPort(p.name, baudRate: 115200, dataBits: 8);
-        await test.writeText('AT\r\n');
-        final resp = await test.readUntil('\n', timeout: const Duration(milliseconds: 1500));
-        await _manager.closePort(p.name);
-        if (resp.toString().contains('OK')) return p.name;
-      } catch (_) {
-        try { await _manager.closePort(p.name); } catch (_) {}
-      }
+  final ports = await _manager.getAvailablePorts();
+  for (final p in ports) {
+    SerialPort? test;
+    try {
+      // Используем p.portName вместо p.name
+      test = await _manager.openPort(p.portName, baudRate: 115200, dataBits: 8);
+      await test.writeText('AT\r\n');
+      final resp = await test.readUntil('\n', timeout: const Duration(milliseconds: 1500));
+      await _manager.closePort(p.portName);
+      if (resp.toString().contains('OK')) return p.portName;
+    } catch (_) {
+      try { await _manager.closePort(p.portName); } catch (_) {}
     }
-    return null;
+  }
+  return null;
   }
 
   Future<String> checkBalance(String ussdCode, String charset) async {
