@@ -8,21 +8,40 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-      - run: flutter config --enable-windows-desktop
-      - run: flutter pub get
-      - run: flutter build windows --release
-      - name: Package
+
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      # --- ДОБАВЛЕННЫЙ ШАГ ---
+      - name: Generate Windows platform files
+        run: flutter create --platforms=windows .
+      # -----------------------
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Windows (Release)
+        run: flutter build windows --release
+
+      - name: Package portable ZIP
         shell: pwsh
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* `
+          Compress-Archive `
+            -Path build\windows\x64\runner\Release\* `
             -DestinationPath huawei-e173-manager-windows.zip
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
           name: windows-portable
           path: huawei-e173-manager-windows.zip
