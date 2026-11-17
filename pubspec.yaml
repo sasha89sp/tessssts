@@ -1,7 +1,7 @@
 name: huawei_e173_manager
 description: Управление модемом Huawei E173 на Windows.
 publish_to: 'none'
-version: 1.1.0+2
+version: 2.0.0+3
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -11,6 +11,10 @@ dependencies:
     sdk: flutter
   platform_serial: ^0.2.0
   shared_preferences: ^2.2.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.2
+  local_notifier: ^0.1.6
 
 dev_dependencies:
   flutter_test:

@@ -15,6 +15,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _ussd;
   late String _charset;
   late String _storage;
+  late bool _isDarkMode;
 
   @override
   void initState() {
@@ -23,6 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _ussd = TextEditingController(text: widget.settings.ussdCode);
     _charset = widget.settings.charset;
     _storage = widget.settings.smsStorage;
+    _isDarkMode = widget.settings.isDarkMode;
   }
 
   @override
@@ -33,27 +35,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            TextField(
-              controller: _port,
-              decoration: const InputDecoration(
-                labelText: 'COM-порт (AT)',
-                hintText: 'COM40',
-              ),
-            ),
+            TextField(controller: _port, decoration: const InputDecoration(labelText: 'COM-порт (AT)', hintText: 'COM40')),
             const SizedBox(height: 12),
-            TextField(
-              controller: _ussd,
-              decoration: const InputDecoration(
-                labelText: 'USSD-код оператора',
-                hintText: '*100#',
-              ),
-            ),
+            TextField(controller: _ussd, decoration: const InputDecoration(labelText: 'USSD-код оператора', hintText: '*100#')),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: _charset,
               decoration: const InputDecoration(labelText: 'Кодировка'),
               items: const [
-                DropdownMenuItem(value: 'UCS2', child: Text('UCS2 (рекомендуется)')),
+                DropdownMenuItem(value: 'UCS2', child: Text('UCS2')),
                 DropdownMenuItem(value: 'GSM', child: Text('GSM')),
               ],
               onChanged: (v) => setState(() => _charset = v!),
@@ -68,6 +58,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
               onChanged: (v) => setState(() => _storage = v!),
             ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Тёмная тема'),
+              value: _isDarkMode,
+              onChanged: (v) => setState(() => _isDarkMode = v),
+            ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () async {
@@ -76,6 +72,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ussdCode: _ussd.text.trim(),
                   charset: _charset,
                   smsStorage: _storage,
+                  isDarkMode: _isDarkMode,
                 ));
                 if (mounted) Navigator.pop(context);
               },
