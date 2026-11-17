@@ -12,7 +12,7 @@ class DbService {
   }
 
   static Future<void> saveSms(SmsMessage msg) async {
-    // Ключ = дата + отправитель (чтобы не дублировать)
+    // Ключ = дата + отправитель (чтобы не дублировать записи)
     await _box.put('${msg.date}_${msg.from}', msg.toJson());
   }
 

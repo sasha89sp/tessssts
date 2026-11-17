@@ -53,7 +53,7 @@ class ModemService {
     while (_reading && _port != null) {
       try {
         final raw = await _port!.readUntil('\n', timeout: const Duration(milliseconds: 200));
-        final line = raw.toString().trim();
+        final line = raw.trim();
         if (line.isNotEmpty) {
           _log('<<', line);
           _dispatchLine(line);
@@ -110,21 +110,20 @@ class ModemService {
   }
 
   Future<String?> autoDetectPort() async {
-  final ports = await _manager.getAvailablePorts();
-  for (final p in ports) {
-    SerialPort? test;
-    try {
-      // Используем p.portName вместо p.name
-      test = await _manager.openPort(p.portName, baudRate: 115200, dataBits: 8);
-      await test.writeText('AT\r\n');
-      final resp = await test.readUntil('\n', timeout: const Duration(milliseconds: 1500));
-      await _manager.closePort(p.portName);
-      if (resp.toString().contains('OK')) return p.portName;
-    } catch (_) {
-      try { await _manager.closePort(p.portName); } catch (_) {}
+    final ports = await _manager.getAvailablePorts();
+    for (final p in ports) {
+      SerialPort? test;
+      try {
+        test = await _manager.openPort(p.portName, baudRate: 115200, dataBits: 8);
+        await test.writeText('AT\r\n');
+        final resp = await test.readUntil('\n', timeout: const Duration(milliseconds: 1500));
+        await _manager.closePort(p.portName);
+        if (resp.contains('OK')) return p.portName;
+      } catch (_) {
+        try { await _manager.closePort(p.portName); } catch (_) {}
+      }
     }
-  }
-  return null;
+    return null;
   }
 
   Future<String> checkBalance(String ussdCode, String charset) async {
@@ -181,19 +180,34 @@ class ModemService {
     await sendCommand('AT+CSCS="$charset"');
     _log('>>', 'AT+CMGS="$phone"');
     await _port!.writeText('AT+CMGS="$phone"\r\n');
+    
     final deadline = DateTime.now().add(const Duration(seconds: 5));
     bool gotPrompt = false;
     while (DateTime.now().isBefore(deadline)) {
       final line = await _readLine(timeout: const Duration(milliseconds: 500));
       if (line.contains('>')) { gotPrompt = true; break; }
-      if (line.contains('ERROR')) throw Exception('Модем отверг номер: $line');
+      if (line.contains('ERROR')) throw Exception('Модем отверг команду: $line');
     }
-    if (!gotPrompt) throw Exception('Нет приглашения ">"');
+    if (!gotPrompt) throw Exception('Нет приглашения ">" от модема');
+
     final payload = charset == 'UCS2' ? _toUcs2Hex(text) : text;
+    _log('>>', '$payload\\x1A');
     await _port!.writeText('$payload\x1A');
-    final lines = await sendCommand('');
-    if (lines.any((l) => l.startsWith('+CMGS:'))) _log('<<', 'SMS отправлено');
-    else if (lines.any((l) => l.contains('ERROR'))) throw Exception('Ошибка: ${lines.join(' ')}');
+
+    final responseDeadline = DateTime.now().add(const Duration(seconds: 15));
+    bool success = false;
+    while (DateTime.now().isBefore(responseDeadline)) {
+      final line = await _readLine(timeout: const Duration(milliseconds: 500));
+      if (line.startsWith('+CMGS:')) {
+        success = true;
+        _log('<<', 'SMS отправлено (MR: ${line.substring(6).trim()})');
+        break;
+      }
+      if (line.contains('ERROR')) {
+        throw Exception('Ошибка отправки SMS: $line');
+      }
+    }
+    if (!success) throw Exception('Таймаут при отправке SMS');
   }
 
   Future<int?> getSignal() async {

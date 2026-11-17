@@ -50,6 +50,7 @@ class LogEntry {
   final DateTime time;
   final String direction; // '>>' отправлено, '<<' получено, '!!' ошибка
   final String text;
+
   LogEntry(this.direction, this.text) : time = DateTime.now();
 
   @override
